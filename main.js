@@ -1,19 +1,77 @@
-var request = require('request');
-var cheerio = require('cheerio');
-var convertCurrency = require('nodejs-currency-converter');
+const request = require('request');
+const cheerio = require('cheerio');
+const numeral = require('numeral');
+const convertCurrency = require('nodejs-currency-converter');
+
+var gameName;
 
 const rawResults = [];
 var finalResults = [];
 
-function savePrice(error, response, body) {
+const headers = {
+    'Accept': '*/*',
+    'Referer': 'https://store.steampowered.com/app/644930/They_Are_Billions/',
+    'X-Requested-With': 'json',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36'
+}
+
+function replaceDecimalSeparator(rawPrice){
+    let splitPrice = rawPrice.split(',');
+    let priceDec;
+    let priceThous;
+
+    if (splitPrice[0] == rawPrice){
+        priceThous = rawPrice;
+    } else {
+        priceThous = splitPrice[0];
+    }
+
+    if (splitPrice[1] == undefined){
+        priceDec = '00';
+    } else {
+        priceDec = splitPrice[1];
+    }
+
+    priceThous = priceThous.replace('.', ',');
+    return (priceThous + '.' + priceDec);
+}
+
+async function savePrice(error, response, body) {
+    
     if (!error && response.statusCode == 200) {
         const $ = cheerio.load(body);
-        var price = $('.match_price');
-        if (this.replace){
-            price.text().replace(',')
+        var rawPrice = $('.match_price');
+        rawPrice = rawPrice.text();
+
+        var finalPrice = '';
+
+        if (this.replace == true){
+            
+            finalPrice = replaceDecimalSeparator(rawPrice);
+
+        } else if (this.replace == 'peru'){
+
+            finalPrice = rawPrice.replace('S/.', '');
+
+        } else {
+
+            finalPrice = rawPrice;
+
         }
-        rawResults.push({"country":this.country, "price": price.text(), "currency": this.currency});
+
+        var finalPrice = numeral(finalPrice).value();
+    
+        /* console.log(`Pushing: ${this.country}: ${finalPrice} ${this.currency}`); */
+        await rawResults.push({"country":this.country, "price": finalPrice, "currency": this.currency});
+
+        if (this.print){
+            printPrices();
+        }
+
     }
+
+
+
 }
 
 function convertCurrencies(finalCurrency){
@@ -36,29 +94,75 @@ function cachedCurrency(val){
     );
 }
 
-function printPrices(finalCurrency){
-    
+function printPrices(){
+
+    rawResults.forEach(res => {
+        console.log(res.country + ':' + res.price + ' ' + res.currency);
+    });
 
 }
 
-function printGame(error, response, body) {
+function getGameName(gameID){
+
+    let options = {
+        url: `https://store.steampowered.com/search/suggest?term=${gameID}&f=games&cc=us&l=english&`,
+        headers: headers
+    };
+    
+    request(options, saveGameName);
+
+}
+
+function saveGameName(error, response, body) {
     if (!error && response.statusCode == 200) {
         const $ = cheerio.load(body);
-        var game = $('.match_name');
-        console.log(`Game: ${game.text()}`);
+        var container = $('.match_name');
+        gameName = container.text();
     }
 }
 
-function getCountryByCode(code) {
+function getCountryByCC(code) {
     return countries.filter(
         function(countries){ return countries.code == code }
     );
 }
 
-function getCountryByName(name) {
+function getCountryByCN(name) {
     return countries.filter(
         function(countries){ return countries.name == name }
     );
+}
+
+function requestWorldwide(gameID){
+
+    console.log('Searching for pricing Worldwide');
+
+    for (let i = 0; i < countries.length; i++) {
+
+        let finalIteration = i == countries.length-1;
+
+        let options = {
+            url: `https://store.steampowered.com/search/suggest?term=${gameID}&f=games&cc=${countries[i].code}&l=english&`,
+            headers: headers
+        };
+
+        request(options, savePrice.bind({country: countries[i].name, currency: countries[i].currency, replace: countries[i].replace, "print": finalIteration}));
+        
+    }
+
+}
+
+function requestSpecCountry(gameID, countryReffer){
+
+    console.log('Searching for pricing in ' + countryReffer.name);
+        
+    let options = {
+        url: `https://store.steampowered.com/search/suggest?term=${gameID}&f=games&cc=${countryReffer.code}&l=english&`,
+        headers: headers
+    };
+
+    request(options, savePrice.bind({country: countryReffer.name, currency: countryReffer.currency, replace: countryReffer.replace, "print": true}));
+
 }
 
 var countries = [
@@ -233,7 +337,7 @@ var countries = [
     {"name": "Panama", "code": "PA", "currency": "USD", "replace": false},
     {"name": "Papua New Guinea", "code": "PG", "currency": "USD", "replace": false},
     {"name": "Paraguay", "code": "PY", "currency": "USD", "replace": false},
-    {"name": "Peru", "code": "PE", "currency": "PEN", "replace": peru},
+    {"name": "Peru", "code": "PE", "currency": "PEN", "replace": 'peru'},
     {"name": "Philippines", "code": "PH", "currency": "PHP", "replace": false},
     {"name": "Pitcairn", "code": "PN", "currency": "USD", "replace": false},
     {"name": "Poland", "code": "PL", "currency": "PLN", "replace": true},
@@ -308,7 +412,7 @@ var countries = [
     {"name": "land Islands", "code": "AX", "currency": "USD", "replace": true},
 ]
 
-async function init(){
+function init(){
 
     // const gameID = readID();
 
@@ -317,54 +421,23 @@ async function init(){
     const gameID = process.argv.slice(2)[0];
     const prefferedCountry = process.argv.slice(2)[1];
 
-    const nameReffer = getCountryByName(prefferedCountry)[0];
-    const codeReffer = getCountryByCode(prefferedCountry)[0];
+    const cnReffer = getCountryByCN(prefferedCountry)[0];
+    const ccReffer = getCountryByCC(prefferedCountry)[0];
 
-    
-
-    let headers = {
-        'Accept': '*/*',
-        'Referer': 'https://store.steampowered.com/app/644930/They_Are_Billions/',
-        'X-Requested-With': 'json',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36'
-    };
-    
-    let options = {
-        url: `https://store.steampowered.com/search/suggest?term=${gameID}&f=games&cc=us&l=english&`,
-        headers: headers
-    };
-
-    await request(options, printGame);
+    getGameName(gameID);
 
     if (prefferedCountry == undefined) {
-        for (let i = 0; i < countries.length; i++) {
-
-            let options = {
-                url: `https://store.steampowered.com/search/suggest?term=${gameID}&f=games&cc=${countries[i].code}&l=english&`,
-                headers: headers
-            };
     
-            request(options, savePrice.bind({country: countries[i].name, currency: countries[i].currency}));
-    
-        }
-    } else if (codeReffer != undefined){
+        requestWorldwide(gameID);
 
-        console.log('Searching for pricing in ' + codeReffer.name);
-        let options = {
-            url: `https://store.steampowered.com/search/suggest?term=${gameID}&f=games&cc=${prefferedCountry}&l=english&`,
-            headers: headers
-        };
-        request(options, savePrice.bind({country: prefferedCountry, currency: countries[i].currency}));
+    } else if (ccReffer != undefined){
 
-    } else if (nameReffer != undefined){
+        requestSpecCountry(gameID, ccReffer);
 
-        console.log('Searching for pricing in ' + nameReffer.name);
-        let options = {
-            url: `https://store.steampowered.com/search/suggest?term=${gameID}&f=games&cc=${nameReffer.code}&l=english&`,
-            headers: headers
-        };
+    } else if (cnReffer != undefined){
 
-        request(options, savePrice.bind({country: prefferedCountry, currency: countries[i].currency}));
+        requestSpecCountry(gameID, cnReffer);
+
     } else {
         console.log('Invalid country name/code');
     }
@@ -372,5 +445,4 @@ async function init(){
 }
 
 init();
-
 
