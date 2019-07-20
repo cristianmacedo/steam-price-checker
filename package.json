@@ -1,0 +1,31 @@
+{
+  "name": "steam-price-checker",
+  "version": "1.0.0",
+  "description": "A Node module that is able to return the price of any Steam game in all the possible countries from a given Game ID.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CristianMacedo/steam-price-checker.git"
+  },
+  "keywords": [
+    "steam",
+    "game",
+    "price",
+    "checker",
+    "worldwide",
+    "currency"
+  ],
+  "author": "Cristian Macedo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CristianMacedo/steam-price-checker/issues"
+  },
+  "homepage": "https://github.com/CristianMacedo/steam-price-checker#readme",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "request": "^2.88.0"
+  }
+}
