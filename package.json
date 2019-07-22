@@ -1,6 +1,6 @@
 {
   "name": "steam-price-checker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Node module that is able to return the price of any Steam game in all the possible countries from a given Game ID.",
   "main": "main.js",
   "scripts": {
