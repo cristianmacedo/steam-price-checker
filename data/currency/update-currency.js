@@ -27,9 +27,7 @@ function returnHTML(url){
             } else {
                 reject(new Error(error));
             }
-
         })
-
     })
 }
 
@@ -44,9 +42,7 @@ function returnCurrency(html) {
         } else {
             resolve(container);
         }
-
     })
-
 }
 
 function searchRates(base){
@@ -59,7 +55,6 @@ function searchRates(base){
             
             if(base != currency){
     
-    
                 promiseArray.push( new Promise(async (resolve, reject) =>{
                     
                     try {
@@ -68,21 +63,15 @@ function searchRates(base){
                         const price = await returnCurrency(html);
     
                         newJson.rates[currency] = parseFloat(price.replace(',','.'));
-                        console.log(`1 ${base} to ${currency} = ` + price);
-                        
+                        console.log(`1 ${base} to ${currency} = ` + price);   
                         resolve();
     
                     } catch(error){
                         reject(error);
                     }
-        
                 }))
-                
-
             } else {
-
                 newJson.rates[currency] = 1.00;
-
             }
         }) 
         try{
@@ -99,21 +88,27 @@ function searchRates(base){
 function saveJSON(newJson) {
 
     return new Promise(async (resolve, reject) => {
-        
-        try {
-            await obj.filter(
-                function(rate){ 
-                    if (rate.base == newJson.base){     
-                        rate = newJson;
-                        return resolve();
-                    } else {
-                        obj.push(newJson);
-                        return resolve();
-                    }
-                }
-            )
 
-            resolve(fs.writeFile('./latest-rates.json', JSON.stringify(obj, null, 4), 'utf8', () => console.log('New rates data saved as latest-rates.json')));
+        try {
+
+            let found = false;
+
+            for (let i = 0; i < obj.length; i++) {
+                if (obj[i].base == newJson.base){     
+                    obj[i] = newJson;
+                    found = true;
+                    console.log('\n Found object');
+                    break;
+                }
+            }
+
+            if (!found){
+                console.log('\n Data not found. Adding new...');
+                obj.push(newJson);
+            }
+
+            console.log('\n Saving file...');
+            resolve(fs.writeFile('./latest-rates.json', JSON.stringify(obj, null, 4), 'utf8', () => console.log('\n New rates data saved as latest-rates.json')));
 
         } catch(err){
             reject(err);
@@ -138,8 +133,7 @@ function init() {
                 
                 await searchRates(base);
                 await saveJSON(newJson);
-                console.log(obj);
-                
+                resolve();
     
             } catch(error){
     
