@@ -2,7 +2,7 @@ const request = require('request');
 const cheerio = require('cheerio');
 const numeral = require('numeral');
 
-const latestRates = require('./data/currency/latest-rates').data;
+const latestRates = require('./data/currency/latest-rates.json');
 const countries = require('./data/countries/countries').data;
 
 var exceptions = ['min', 'max'];
@@ -137,21 +137,21 @@ function convertCurrencies(finalCurrency){
         try {
 
             let currencyData = await searchCurrency(finalCurrency);
-    
+            
             console.log(`\nConverting values to ${currencyData.base}`);
-    
+            
             rawResults.forEach(res => {
                 
                 let convertedValue = (parseFloat(res.price) / currencyData.rates[res.currency]).toFixed(2);
                 finalResults.push({"country":res.country, "price": convertedValue, "currency": finalCurrency});
-    
+                
             });
-
-            resolve();
-
+            
         } catch(error) {
             reject(new Error('Could not convert currencies. ' + error));
         }
+        
+        resolve();
 
     })
 
@@ -162,7 +162,6 @@ function printPrices(){
     if (info.filter == 'min'){
 
         let min = {"country":undefined, "price": 1000000, "currency": undefined};
-
         finalResults.forEach(res => {
 
             if(parseFloat(res.price) < parseFloat(min.price)){
@@ -170,13 +169,11 @@ function printPrices(){
             }
 
         });
-
         console.log('\n Lowest price found: ' + min.country + ': ' + min.price + ' ' + min.currency);
     
     } else if (info.filter == 'max') {
 
         let max = {"country":undefined, "price": -1000000, "currency": undefined};
-        
         finalResults.forEach(res => {
 
             if(parseFloat(res.price) > parseFloat(max.price)){
@@ -184,11 +181,9 @@ function printPrices(){
             }
 
         });
-
         console.log('\n Highest price found: ' + max.country + ': ' + max.price + ' ' + max.currency)
 
     } else {
-
 
         finalResults.forEach(res => {
             console.log(res.country + ': ' + res.price + ' ' + res.currency);
@@ -203,14 +198,9 @@ function returnHTML(url){
         request(url, (error, response, body) => {
 
             if (!error && response.statusCode == 200) {
-                try{
-                    resolve(body);
-                } catch(error) {
-                    reject(new Error(error));
-                }
-
+                resolve(body);
             } else {
-                reject(new Error(error));
+                reject(new Error('Could not open page. ' + error));
             }
 
         })
@@ -222,17 +212,23 @@ function searchGameName(gameID){
 
     return new Promise((resolve, reject) => {
 
-        let options = {
-            url: `https://store.steampowered.com/search/suggest?term=${gameID}&f=games&cc=us&l=english&`,
-            headers: headers
-        };
+        try{
+            let options = {
+                url: `https://store.steampowered.com/search/suggest?term=${gameID}&f=games&cc=us&l=english&`,
+                headers: headers
+            };
+    
+            const html = returnHTML(options);
+            
+            html
+                .then(html => validateGame(html))
+                .then(res => resolve(res))
+                .catch(err => reject(err))
 
-        const html = returnHTML(options);
-        
-        html
-            .then(html => validateGame(html))
-            .then(res => resolve(res))
-            .catch(err => console.log(err))
+        } catch(error){
+            reject(error);
+        }
+
         
     })
 
@@ -282,22 +278,25 @@ function sendRequests(){
 
     return new Promise((resolve, reject) => {
 
-        if (info.prefferedcountry.preffers) {
-
+        try {
+            if (info.prefferedcountry.preffers) {
+    
+                printColored("FgGreen", 'Searching for pricing in ' + info.prefferedcountry.refference.name + '\n');
+                resolve(requestSpecCountry(info.gameid, info.prefferedcountry.refference));
             
-            printColored("FgGreen", 'Searching for pricing in ' + info.prefferedcountry.refference.name + '\n');
-
-            resolve(requestSpecCountry(info.gameid, info.prefferedcountry.refference));
+            } else {
         
-        } else {
+                printColored("FgGreen", 'Searching for pricing Worldwide');
     
-            printColored("FgGreen", 'Searching for pricing Worldwide');
-
-            // console.log('Searching for pricing Worldwide');
-
-            resolve(requestWorldwide(info.gameid));
+                // console.log('Searching for pricing Worldwide');
     
-        } 
+                resolve(requestWorldwide(info.gameid));
+        
+            } 
+        } catch (err) {
+            reject(err);
+        }
+
 
     })
     
@@ -381,7 +380,7 @@ function savePrice(country, price, currency){
 
 }
 
-function getPrice(options, replace){
+function getPrice(options){
 
     return new Promise (async (resolve, reject) => {
     
@@ -416,7 +415,7 @@ function requestSpecCountry(gameid, countryReffer){
             resolve()
 
         } catch (error){
-            reject(console.log(error));
+            reject('Could not request. ' + error);
         }
     
     })
@@ -427,23 +426,28 @@ async function requestWorldwide(gameid){
 
     return new Promise (async (resolve, reject) => {
 
-        let promiseArray = [];
-
-        for (let i = 0; i < countries.length; i++) {
-
-            promiseArray.push(new Promise ((resolve, reject) => {
-
-                try {
-                    resolve(requestSpecCountry(gameid, countries[i]));
-                } catch(error){
-                    reject(error);
-                }
-                
-            }))
-
-        }
+        try {
+            let promiseArray = [];
     
-        resolve(await Promise.all(promiseArray));
+            for (let i = 0; i < countries.length; i++) {
+    
+                promiseArray.push(new Promise ((resolve, reject) => {
+    
+                    try {
+                        resolve(requestSpecCountry(gameid, countries[i]));
+                    } catch(error){
+                        reject(error);
+                    }
+                    
+                }))
+    
+            }
+        
+            resolve(await Promise.all(promiseArray));
+        } catch(error){
+            reject(error);
+        }
+
 
     })
 
