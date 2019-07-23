@@ -2,8 +2,8 @@ const request = require('request');
 const cheerio = require('cheerio');
 const numeral = require('numeral');
 
-const latestRates = require('./data/currency/latest-rates.json');
-const countries = require('./data/countries/countries').data;
+const latestRates = require('./data/latest-rates.json');
+const countries = require('./data/countries.json');
 
 var exceptions = ['min', 'max'];
 
