@@ -1,4 +1,4 @@
-var data = [
+[
     {"name": "Afghanistan", "code": "AF", "currency": "USD", "replace": false},
     {"name": "Albania", "code": "AL", "currency": "EUR", "replace": true},
     {"name": "Algeria", "code": "DZ", "currency": "USD", "replace": false},
@@ -170,7 +170,7 @@ var data = [
     {"name": "Panama", "code": "PA", "currency": "USD", "replace": false},
     {"name": "Papua New Guinea", "code": "PG", "currency": "USD", "replace": false},
     {"name": "Paraguay", "code": "PY", "currency": "USD", "replace": false},
-    {"name": "Peru", "code": "PE", "currency": "PEN", "replace": 'peru'},
+    {"name": "Peru", "code": "PE", "currency": "PEN", "replace": "peru"},
     {"name": "Philippines", "code": "PH", "currency": "PHP", "replace": false},
     {"name": "Pitcairn", "code": "PN", "currency": "USD", "replace": false},
     {"name": "Poland", "code": "PL", "currency": "PLN", "replace": true},
@@ -242,9 +242,5 @@ var data = [
     {"name": "Yemen", "code": "YE", "currency": "USD", "replace": false},
     {"name": "Zambia", "code": "ZM", "currency": "USD", "replace": false},
     {"name": "Zimbabwe", "code": "ZW", "currency": "USD", "replace": false},
-    {"name": "land Islands", "code": "AX", "currency": "USD", "replace": true},
+    {"name": "land Islands", "code": "AX", "currency": "USD", "replace": true}
 ]
-
-module.exports = {
-    data
-}

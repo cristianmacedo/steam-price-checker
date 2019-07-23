@@ -1,7 +1,7 @@
 const request = require('request');
 const cheerio = require('cheerio');
 const fs = require('fs');
-const obj = require('./latest-rates.json');
+const obj = require('./data/latest-rates.json');
 
 const currencies = ['AED', 'ARS', 'AUD', 'BRL', 'CAD', 'CHF', 'CLP', 'CNY', 'COP', 'CRC', 'EUR', 'GBP', 'HKD', 'ILS', 'IDR', 'INR', 'JPY', 'KRW', 'KWD', 'KZT', 'MXN', 'MYR', 'NOK', 'NZD', 'PEN', 'PHP', 'PLN', 'QAR', 'RUB', 'SAR', 'SGD', 'THB', 'TRY', 'TWD', 'UAH', 'USD', 'UYU', 'VND', 'ZAR'];
 
@@ -16,7 +16,6 @@ const newJson = {
 function returnHTML(url){
     return new Promise((resolve, reject) => {
         request(url, (error, response, body) => {
-
             if (!error && response.statusCode == 200) { 
                 try{
                     resolve(body);
@@ -108,7 +107,7 @@ function saveJSON(newJson) {
             }
 
             console.log('\n Saving file...');
-            resolve(fs.writeFile('./latest-rates.json', JSON.stringify(obj, null, 4), 'utf8', () => console.log('\n New rates data saved as latest-rates.json')));
+            resolve(fs.writeFile('./data/latest-rates.json', JSON.stringify(obj, null, 4), 'utf8', () => console.log('\n New rates data saved as /data/latest-rates.json')));
 
         } catch(err){
             reject(err);
