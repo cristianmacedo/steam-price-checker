@@ -31,7 +31,7 @@ node update-rate <currency>
 
 * **currency** - [ISO 4217](https://www.iban.com/currency-codes) 3 letters long currency code to convert the final values to a specific currency. Note: Limited to [Steam Supported Currencies](https://partner.steamgames.com/doc/store/pricing/currencies).
 
-* **filter** 
+* **filter** - Available filters to return specific results:
   * 'min': Returns the country with the lower price
   * 'max': Returns the country with the highest price
 
